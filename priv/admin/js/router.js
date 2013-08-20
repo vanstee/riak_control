@@ -20,11 +20,16 @@ minispade.register('router', function() {
 
       showRing: Ember.Route.transitionTo('ring.index'),
 
+      showStats: Ember.Route.transitionTo('stats.index'),
+
       index: Ember.Route.extend({
         route: '/',
         redirectsTo: 'snapshot.index'
       }),
 
+      /**
+       * Route code for the snapshot page.
+       */
       snapshot: Ember.Route.extend({
         route: 'snapshot',
 
@@ -47,6 +52,9 @@ minispade.register('router', function() {
         })
       }),
 
+      /**
+       * Route code for the cluster page.
+       */
       cluster: Ember.Route.extend({
         route: 'cluster',
 
@@ -72,6 +80,9 @@ minispade.register('router', function() {
         })
       }),
 
+      /**
+       * Route code for the nodes page.
+       */
       nodes: Ember.Route.extend({
         route: 'nodes',
 
@@ -94,6 +105,9 @@ minispade.register('router', function() {
         })
       }),
 
+      /**
+       * Route code for the ring page.
+       */
       ring: Ember.Route.extend({
         route: 'ring',
 
@@ -109,6 +123,31 @@ minispade.register('router', function() {
 
         exit: function(router) {
           router.get('ringController').cancelInterval();
+        },
+
+        index: Ember.Route.extend({
+          route: '/'
+        })
+      }),
+
+      /**
+       * Route code for the stats page.
+       */
+      stats: Ember.Route.extend({
+        route: 'stats',
+
+        connectOutlets: function(router) {
+          router.get('applicationController').
+            connectOutlet('stats', RiakControl.Node.find());
+          $.riakControl.markNavActive('nav-stats');
+        },
+
+        enter: function(router) {
+          router.get('statsController').startInterval();
+        },
+
+        exit: function(router) {
+          router.get('statsController').cancelInterval();
         },
 
         index: Ember.Route.extend({

@@ -112,6 +112,7 @@ minispade.register('nodes', function() {
      * @returns {String}
      */
     nodeID: function() {
+      console.log('nodeID');
       return Ember.guidFor(this);
     }.property(),
 

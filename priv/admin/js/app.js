@@ -80,5 +80,6 @@ minispade.register('app', function() {
   minispade.require('cluster');
   minispade.require('nodes');
   minispade.require('ring');
+  minispade.require('stats');
 
 });

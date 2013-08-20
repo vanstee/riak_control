@@ -1,0 +1,41 @@
+
+/*
+CSS to be applied ONLY on the cluster page
+*/
+
+@import reusable
+  
+
+#stats-page
+
+  h2
+    headline-font()
+    font-size : 24px
+
+  svg
+    font  : 12px 'titillium'
+  
+  .line
+    fill         : none
+    stroke       : red
+    stroke-width : 1.5px
+
+  text
+    fill : mediumGray
+   
+  .axis path, .axis line
+    fill            : none
+    stroke          : lightWhite
+    shape-rendering : crispEdges
+
+  
+  #stats-area
+    margin : 0 auto
+
+  #add-new-graph
+    width  : 650px
+    margin : 0 auto
+
+  .remove-graph
+    float  : left
+    cursor : pointer

@@ -3436,3 +3436,35 @@ input.gui-point-button-right:active {
     background-color: #555;
   }
 }
+#stats-page h2 {
+  font-family: 'titillium', helvetica, arial, sans-serif;
+  font-size: 24px;
+}
+#stats-page svg {
+  font: 12px 'titillium';
+}
+#stats-page .line {
+  fill: none;
+  stroke: #f00;
+  stroke-width: 1.5px;
+}
+#stats-page text {
+  fill: #ccc;
+}
+#stats-page .axis path,
+#stats-page .axis line {
+  fill: none;
+  stroke: rgba(255,255,255,0.18);
+  shape-rendering: crispEdges;
+}
+#stats-page #stats-area {
+  margin: 0 auto;
+}
+#stats-page #add-new-graph {
+  width: 650px;
+  margin: 0 auto;
+}
+#stats-page .remove-graph {
+  float: left;
+  cursor: pointer;
+}
