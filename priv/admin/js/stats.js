@@ -1,4 +1,5 @@
 minispade.register('stats', function() {
+  var id = 0;
 
   /**
    * @class
@@ -84,12 +85,6 @@ minispade.register('stats', function() {
     ]
   });
 
-  // Remove graphs when you click the remove button.
-  $(document).on('click', '.remove-graph', function () {
-    var relevantClass = $(this).attr('class').match(/marker\d+/)[0];
-    $('.' + relevantClass).remove();
-  });
-
   /**
    * @class
    *
@@ -98,7 +93,7 @@ minispade.register('stats', function() {
   RiakControl.TimeSeries = Ember.Object.extend(
     /** @scope RiakControl.TimeSeries.prototype */ {
 
-    id: 0,
+    markerID: 0,
     areaSelector: '#graphs',
     duration: 500,
     title: 'statName',
@@ -123,6 +118,11 @@ minispade.register('stats', function() {
     marginLeft: 40,
 
     /**
+     * Whether or not this object should be marked for cleanup.
+     */
+    kill: false,
+
+    /**
      * Time series dimensions.
      */
     width: function () {
@@ -139,7 +139,7 @@ minispade.register('stats', function() {
     xAxis: function () {
       return d3.scale.linear()
                      .domain([this.get('xMin'), this.get('xMax') - 2])
-                     .range([0, width]);
+                     .range([0, this.get('width')]);
     }.property('xMin', 'xMax'),
 
     yAxis: function () {
@@ -152,10 +152,11 @@ minispade.register('stats', function() {
      * For drawing a line on the graph.
      */
     line: function () {
+      var that = this;
       return d3.svg.line()
                    .interpolate('basis')
-                   .x(function(d, i) { return this.get('xAxis')(i); })
-                   .y(function(d, i) { return this.get('yAxis')(d); });
+                   .x(function(d, i) { return that.get('xAxis')(i); })
+                   .y(function(d, i) { return that.get('yAxis')(d); });
     }.property('xAxis', 'yAxis'),
 
     /**
@@ -170,55 +171,56 @@ minispade.register('stats', function() {
      */
     heading: function () {
       var areaSelector = this.get('areaSelector'),
-          id = this.get('id');
+          id = this.get('markerID');
 
-      $('#' + areaSelector).append(
+      $(areaSelector).append(
         '<h2 class="marker' + id + '">' + this.get('title') + '</h2>');
-      $('#' + areaSelector).append(
+      return $(areaSelector).append(
         '<a class="remove-graph marker' + id + '">remove this graph</a>');
-    }.property('areaSelector', 'id', 'title'),
+    }.property('areaSelector', 'markerID', 'title'),
 
     /**
      * The svg element
      */
     svg: function () {
-      var id = this.get('id'),
+      var id = this.get('markerID'),
           width = this.get('width'),
           height = this.get('height'),
           marginLeft = this.get('marginLeft'),
           marginTop = this.get('marginTop'),
-          yAxis = this.get('yAxis');
+          yAxis = this.get('yAxis'),
+          svg;
 
-      return d3.select("#" + this.get('areaSelector')).append("svg")
-               .attr("class", "marker" + id)
-               .attr("width",
-                   width + marginLeft + this.get('marginRight'))
-               .attr("height",
-                   height + marginTop + this.get('margin.bottom'))
-             
+      svg = d3.select(this.get('areaSelector'))
+              .append("svg")
+                .attr("class", "marker" + id)
+                .attr("width",
+                      width + marginLeft + this.get('marginRight'))
+                .attr("height",
+                     height + marginTop + this.get('marginBottom'))
               .append("g")
                 .attr("transform", 
-                      "translate(" + marginLeft + "," + marginTop + ")")
+                      "translate(" + marginLeft + "," + marginTop + ")");
 
-              .append("defs")
+      svg .append("defs")
+          .append("clipPath")
+            .attr("id", "clip" + id)
+          .append("rect")
+            .attr("width", width)
+            .attr("height", height);
 
-              .append("clipPath")
-                .attr("id", "clip" + id)
-              
-              .append("rect")
-                .attr("width", width)
-                .attr("height", height)
+      svg .append("g")
+            .attr("class", "x axis xaxis" + id)
+            .attr("transform", "translate(0," + yAxis(0) + ")")
+            .call(d3.svg.axis().scale(this.get('xAxis')).orient("bottom"));
+          
+      svg .append("g")
+            .attr("class", "y axis yaxis" + id)
+            .call(d3.svg.axis().scale(yAxis).orient("left"));
 
-              .append("g")
-                .attr("class", "x axis xaxis" + id)
-                .attr("transform", "translate(0," + yAxis(0) + ")")
-                .call(d3.svg.axis().scale(this.get('xAxis')).orient("bottom"))
-
-              .append("g")
-                .attr("class", "y axis yaxis" + id)
-                .call(d3.svg.axis().scale(yAxis).orient("left"));
+      return svg;
     
-    }.property('areaSelector', 'id',
+    }.property('areaSelector', 'markerID',
                'width', 'height',
                'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
                'xAxis', 'yAxis'),
@@ -229,12 +231,12 @@ minispade.register('stats', function() {
     path: function () {
       return this.get('svg')
         .append("g")
-          .attr("clip-path", "url(#clip" + this.get('id') + ")")
+          .attr("clip-path", "url(#clip" + this.get('markerID') + ")")
         .append("path")
           .datum(this.get('data'))
           .attr("class", "line")
           .attr("d", this.get('line'));
-    }.property('svg', 'id', 'data', 'line'),
+    }.property('svg', 'markerID', 'data', 'line'),
 
     /**
      * Function for animating the graph
@@ -243,10 +245,11 @@ minispade.register('stats', function() {
       var newx,
           newXMin = this.get('xMin') + 1,
           newXMax = this.get('xMax') + 1,
-          id = this.get('id'),
+          id = this.get('markerID'),
           data = this.get('data'),
           duration = this.get('duration'),
-          recurse = this.tick;
+          that = this,
+          recurse = function () {return that.tick.call(that)};
 
       // Make sure the graph hasn't been removed.
       var stillExists = $('.marker' + id).length;
@@ -280,25 +283,61 @@ minispade.register('stats', function() {
         // pop the old data point off the front
         data.shift();
       }
+    },
+
+    /**
+     * Describes how to remove this chart.
+     */
+    setupRemove: function () {
+      var id = this.get('markerID'),
+          that = this;
+
+      /*
+       * When we click the associated 'remove graph' button,
+       * delete this jQuery event because it will no longer be
+       * relevant, remove all DOM elements associated with this
+       * object's id, and finally destroy the object.
+       */
+      $('.remove-graph.marker' + id).on('click', function (ev) {
+        $('.remove-graph.marker' + id).off('click');
+        $('.marker' + id).remove();
+        that.set('kill', true);
+      });
+    },
+
+    /**
+     * Hack to actually draw the chart.
+     */
+    start: function () {
+      this.get('width');
+      this.get('height');
+      this.get('xAxis');
+      this.get('yAxis');
+      this.get('line');
+      this.get('data');
+      this.get('heading');
+      this.get('svg');
+      this.get('path');
+      this.get('tick').call(this);
+      this.get('setupRemove').call(this);
     }
   });
-
 
 
   /**
    * An object for creating time series graphs.
    */
-  RiakControl.StatGraphCreator = Ember.Object.create({
+  RiakControl.StatGraphCreator = Ember.ArrayController.create({
+    
+    /**
+     * Holds graph objects.
+     */
+    content: [],
 
     /**
      * Tracks the selected option in RiakControl.AddGraphSelectView.
      */
     selectedStat: '',
-
-    /**
-     * Holds each graph object.
-     */
-    graph: '',
 
     /**
      * Function for creating a new graph.
@@ -308,7 +347,8 @@ minispade.register('stats', function() {
       /*
        * Get the stat name and clean stuff like "KV - " off the front of it.
        */
-      var selected = this.get('selectedStat').replace(/^[^\s]+\s+\-\s+/, '');
+      var selected = this.get('selectedStat').replace(/^[^\s]+\s+\-\s+/, ''),
+          graphObject;
 
       /*
        * If the selected item is not the default option...
@@ -316,10 +356,19 @@ minispade.register('stats', function() {
       if (selected !== '-- Choose a Statistic --') {
         
         /*
-         * Create a new graph (doesn't work).
+         * Create a new graph.
          */
-        var wtf = RiakControl.TimeSeries.create();
-        console.log(wtf)
+        graphObject = RiakControl.TimeSeries.create({
+          markerID: id += 1,
+          title: selected
+        });
+
+        /*
+         * Store the object in our array and
+         * light it up.
+         */
+        this.pushObject(graphObject);
+        graphObject.start();
 
         /*
          * Set the dropdown back to the default option.
@@ -327,7 +376,32 @@ minispade.register('stats', function() {
         $('#add-new-graph select').find('option:first')
                                   .attr('selected', 'selected');
       }
-    }.observes('selectedStat')
+    }.observes('selectedStat'),
+
+    /**
+     * Whenever one of our objects gets `kill` set to true,
+     * find that object in content, remove it, and destroy it.
+     */
+    destroyObj: function () {
+      var toRemove;
+
+      /*
+       * Isolate the object to destroy.
+       */
+      this.get('content').map(function (obj) {
+        if (obj.kill === true) {
+          toRemove = obj;
+        }
+      });
+
+      /*
+       * If we found an object to destroy, remove it and destroy it.
+       */
+      if (toRemove) {
+        this.removeObject(this.findProperty('markerID', toRemove.markerID));
+        toRemove.destroy();
+      }
+    }.observes('content.@each.kill')
   });
 
 });

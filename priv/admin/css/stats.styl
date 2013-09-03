@@ -4,7 +4,11 @@ CSS to be applied ONLY on the cluster page
 */
 
 @import reusable
-  
+
+line()
+  fill         : none
+  stroke       : red
+  stroke-width : 1.5px
 
 #stats-page
 
@@ -16,9 +20,7 @@ CSS to be applied ONLY on the cluster page
     font  : 12px 'titillium'
   
   .line
-    fill         : none
-    stroke       : red
-    stroke-width : 1.5px
+    line()
 
   text
     fill : mediumGray
@@ -28,9 +30,13 @@ CSS to be applied ONLY on the cluster page
     stroke          : lightWhite
     shape-rendering : crispEdges
 
+    &.line
+      line()
+
   
   #stats-area
     margin : 0 auto
+    width  : 1100px
 
   #add-new-graph
     width  : 650px
