@@ -27,6 +27,7 @@ PhantomJS is missing to run the javascript tests, to install on your OS do the f
 
 - MacOS via homebrew run `brew install phantomjs`
 - Ubuntu `apt-get install phantomjs`
+- Other linux distros should check http://phantomjs.org/download.html to download a binary build
 
 or visit http://phantomjs.org/ for more information.
 endef
